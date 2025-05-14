@@ -9,7 +9,7 @@
         "start:dev": "nodemon ./index.js",
         "start:ws": "ts-node src",
         "build:ws": "tsc",
-        "eslint": "npx eslint ." 
+        "eslint": "npx eslint ."
     },
     "author": "Andrei Auchynnikau",
     "keywords": [],
@@ -17,6 +17,8 @@
     "devDependencies": {
         "@eslint/js": "^9.26.0",
         "@stylistic/eslint-plugin-ts": "^4.2.0",
+        "@types/node": "^22.15.17",
+        "@types/ws": "^8.18.1",
         "eslint": "^9.26.0",
         "nodemon": "^2.0.22",
         "ts-node": "^10.9.2",
