@@ -34,7 +34,7 @@ export class Users {
     if (user) {
       if (user.password === password) return { userId: user.userId, name: user.name };
 
-      throw new Error('Please check password!');
+      throw new Error('Please check password! Or create new user.');
     }
 
     const userId = this.users.push({ name, password });

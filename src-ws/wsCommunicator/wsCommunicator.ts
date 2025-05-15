@@ -53,5 +53,6 @@ export class WSCommunicator {
     }
 
     this.senderMessages(PlayerTypeCommands.Registration, message);
+    this.senderMessages(PlayerTypeCommands.UpdateWinners, this.db.winners.winners);
   }
 }
