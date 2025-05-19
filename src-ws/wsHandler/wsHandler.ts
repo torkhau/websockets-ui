@@ -184,6 +184,23 @@ export class WSHandlerBattleship extends EventEmitter {
         });
       }
     });
+
+    this.on('randomAttack', (userId: string, data: string) => {
+      const { gameId, indexPlayer } = JSON.parse(data) as Omit<Attack, 'x' | 'y'>;
+      const { currentPlayer, users } = this.rooms.getRoom(gameId);
+
+      if (currentPlayer !== indexPlayer) return;
+
+      const enemyUser = users.find(({ userId }) => userId !== indexPlayer);
+
+      if (!enemyUser) return;
+
+      const coord = enemyUser?.gameBoard?.randomAttack();
+
+      if (!coord) return;
+
+      this.emit('attack', userId, JSON.stringify({ gameId, x: coord.x, y: coord.y, indexPlayer }));
+    });
   }
 
   private sendResult(users: Joined | Joined[], type: TypeMessages, data: string) {

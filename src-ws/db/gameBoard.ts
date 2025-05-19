@@ -110,7 +110,7 @@ export class GameBoard {
           if (nx < 0 || ny < 0 || nx >= LENGTH || ny >= LENGTH) continue;
 
           if (isShipPosition(nx, ny)) continue;
-          
+
           if (this.board.cells[ny][nx] !== undefined) continue;
 
           this.board.cells[ny][nx] = 'miss';
@@ -120,5 +120,16 @@ export class GameBoard {
     }
 
     return result;
+  }
+
+  public randomAttack(): Coordinates {
+    const emptyCells: Coordinates[] = [];
+
+    for (let y = 0; y < LENGTH; y += 1)
+      for (let x = 0; x < LENGTH; x += 1) if (this.board.cells[y][x] === undefined) emptyCells.push({ x, y });
+
+    if (emptyCells.length === 0) return { x: 0, y: 0 };
+
+    return emptyCells[Math.floor(Math.random() * emptyCells.length)];
   }
 }
