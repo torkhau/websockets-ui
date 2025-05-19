@@ -1,6 +1,6 @@
 export interface RoomUser {
   name: string;
-  userId: number;
+  userId: string;
 }
 
 interface RoomData {

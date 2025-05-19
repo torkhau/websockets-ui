@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer } from 'ws';
-import { MessageData, typeMessages, WSHandler } from './wsHandler/wsHandler.js';
+import { MessageData, typeMessages, WSHandlerBattleship } from './wsHandler/wsHandler.js';
 
 interface Message extends MessageData {
   id: 0;
@@ -9,7 +9,7 @@ const PORT = 3000;
 
 export function startWSServer() {
   const wss = new WebSocketServer({ port: PORT });
-  const wsHandler = new WSHandler();
+  const wsHandler = new WSHandlerBattleship();
 
   wss.on('connection', (ws: WebSocket) => {
     const currentUserId = crypto.randomUUID();
@@ -20,7 +20,7 @@ export function startWSServer() {
       const { type, data } = JSON.parse(message) as Message;
 
       console.log(`Received message: ${type} => ${data}`);
-      
+
       if (typeMessages.includes(type)) wsHandler.handleMessage(currentUserId, { type, data });
     });
 
