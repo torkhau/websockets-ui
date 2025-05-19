@@ -166,6 +166,23 @@ export class WSHandlerBattleship extends EventEmitter {
 
       this.sendResult(currentUser, 'turn', JSON.stringify({ currentPlayer: nextPlayer }));
       this.sendResult(enemy, 'turn', JSON.stringify({ currentPlayer: nextPlayer }));
+
+      if (status === 'killed') {
+        const marked = enemyUser.gameBoard?.markKilledShip(rest);
+
+        if (!marked) return;
+
+        marked.forEach((position) => {
+          this.sendResult(
+            currentUser,
+            'attack',
+            JSON.stringify({ status: 'miss', position, currentPlayer: indexPlayer })
+          );
+          this.sendResult(enemy, 'attack', JSON.stringify({ status: 'miss', position, currentPlayer: indexPlayer }));
+          this.sendResult(currentUser, 'turn', JSON.stringify({ currentPlayer: nextPlayer }));
+          this.sendResult(enemy, 'turn', JSON.stringify({ currentPlayer: nextPlayer }));
+        });
+      }
     });
   }
 

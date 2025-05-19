@@ -88,4 +88,37 @@ export class GameBoard {
 
     return 'miss';
   }
+
+  public markKilledShip({ x, y }: Coordinates): Coordinates[] {
+    const ship = this.board.ships.find((s) => s.positions.some((p) => p.x === x && p.y === y));
+
+    if (!ship) return [];
+
+    const directions = [-1, 0, 1];
+    const result: Coordinates[] = [];
+
+    const isShipPosition = (x: number, y: number) => ship.positions.some((p) => p.x === x && p.y === y);
+
+    for (const { x: sx, y: sy } of ship.positions) {
+      for (const dx of directions) {
+        for (const dy of directions) {
+          const nx = sx + dx;
+          const ny = sy + dy;
+
+          if (dx === 0 && dy === 0) continue;
+
+          if (nx < 0 || ny < 0 || nx >= LENGTH || ny >= LENGTH) continue;
+
+          if (isShipPosition(nx, ny)) continue;
+          
+          if (this.board.cells[ny][nx] !== undefined) continue;
+
+          this.board.cells[ny][nx] = 'miss';
+          result.push({ x: nx, y: ny });
+        }
+      }
+    }
+
+    return result;
+  }
 }
