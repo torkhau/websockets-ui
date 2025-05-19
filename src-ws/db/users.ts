@@ -37,8 +37,16 @@ export class Users {
       throw new Error('Please check password! Or create new user.');
     }
 
-    const userId = this.users.push({ name, password });
+    const userId = this.users.push({ name, password }) - 1;
 
     return { userId, name };
+  }
+
+  public getUserById(userId: number): Omit<UserData, 'password'> {
+    const user = this.users[userId];
+
+    if (!user) throw new Error('User not found!');
+
+    return { name: user.name, userId };
   }
 }
