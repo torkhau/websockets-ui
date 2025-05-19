@@ -9,6 +9,7 @@ export interface RoomUser {
 
 interface RoomData {
   users: RoomUser[];
+  currentPlayer?: string;
 }
 
 interface RoomDataDTO {
@@ -62,11 +63,21 @@ export class Rooms {
     return room.users.every(({ ready }) => ready);
   }
 
-  public getUsersInRoom(gameId: number): RoomUser[] {
+  public getRoom(gameId: number): RoomData {
     const room = this.rooms[gameId];
 
-    if (!room) return [];
+    if (!room) return { users: [] };
 
-    return room.users;
+    return room;
+  }
+
+  public setCurrentPlayer(gameId: number, currentPlayer: string): string {
+    const room = this.rooms[gameId];
+
+    if (!room) return '';
+
+    room.currentPlayer = currentPlayer;
+
+    return room.currentPlayer;
   }
 }

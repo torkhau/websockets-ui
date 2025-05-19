@@ -1,4 +1,4 @@
-type Cell = undefined | 'ship' | 'hit' | 'miss' | 'sunk';
+type Cell = undefined | 'ship' | 'shot' | 'miss' | 'killed';
 
 export type Coordinates = { x: number; y: number };
 
@@ -54,7 +54,7 @@ export class GameBoard {
     return this.board.rawShips ? [...this.board.rawShips] : [];
   }
 
-  public shoot({ x, y }: Coordinates): 'miss' | 'hit' | 'sunk' {
+  public shoot({ x, y }: Coordinates): 'miss' | 'shot' | 'killed' {
     const cell = this.board.cells[y][x];
 
     if (cell === undefined) {
@@ -63,7 +63,7 @@ export class GameBoard {
     }
 
     if (cell === 'ship') {
-      this.board.cells[y][x] = 'hit';
+      this.board.cells[y][x] = 'shot';
 
       const key = `${x},${y}`;
       const ship = this.board.ships.find((s) => s.positions.some((p) => p.x === x && p.y === y));
@@ -73,13 +73,17 @@ export class GameBoard {
 
         if (ship.hits.size === ship.positions.length) {
           ship.positions.forEach(({ x, y }) => {
-            this.board.cells[y][x] = 'sunk';
+            this.board.cells[y][x] = 'killed';
           });
-          return 'sunk';
+          return 'killed';
         }
 
-        return 'hit';
+        return 'shot';
       }
+    }
+
+    if (cell === 'shot' || cell === 'killed' || cell === 'miss') {
+      return cell;
     }
 
     return 'miss';

@@ -35,6 +35,13 @@ export interface Joined {
   user?: User;
 }
 
+interface Attack {
+  gameId: number;
+  x: number;
+  y: number;
+  indexPlayer: string;
+}
+
 export class WSHandlerBattleship extends EventEmitter {
   private winners = new Winners();
   private rooms = new Rooms();
@@ -53,6 +60,16 @@ export class WSHandlerBattleship extends EventEmitter {
       if (!joinedUser) return;
 
       const userData = JSON.parse(data) as User;
+
+      if (!(userData.password && userData.name)) {
+        this.sendResult(
+          joinedUser,
+          'reg',
+          JSON.stringify({ name: '', index: -1, error: true, errorText: 'User data is not valid' })
+        );
+        return;
+      }
+
       joinedUser['user'] = userData;
 
       this.sendResult(
@@ -96,7 +113,9 @@ export class WSHandlerBattleship extends EventEmitter {
       this.rooms.setShips({ gameId, ...rest });
 
       if (this.rooms.isRoomReady(gameId)) {
-        const [user1, user2] = this.rooms.getUsersInRoom(gameId);
+        const {
+          users: [user1, user2],
+        } = this.rooms.getRoom(gameId);
         const joinedUser1 = this.joined.get(user1.userId);
         const joinedUser2 = this.joined.get(user2.userId);
 
@@ -111,8 +130,42 @@ export class WSHandlerBattleship extends EventEmitter {
             'start_game',
             JSON.stringify({ ships: user2.gameBoard?.getRawShips(), currentPlayerIndex: user2.userId })
           );
+
+          const currentPlayer = this.rooms.setCurrentPlayer(gameId, Math.random() > 0.5 ? user1.userId : user2.userId);
+          this.sendResult(joinedUser1, 'turn', JSON.stringify({ currentPlayer }));
+          this.sendResult(joinedUser2, 'turn', JSON.stringify({ currentPlayer }));
         }
       }
+    });
+
+    this.on('attack', (_userId: string, data: string) => {
+      const { gameId, indexPlayer, ...rest } = JSON.parse(data) as Attack;
+      const { currentPlayer, users } = this.rooms.getRoom(gameId);
+
+      if (currentPlayer !== indexPlayer) return;
+
+      const enemyUser = users.find(({ userId }) => userId !== indexPlayer);
+
+      if (!enemyUser) return;
+
+      const status = enemyUser?.gameBoard?.shoot(rest);
+      const currentUser = this.joined.get(indexPlayer);
+      const enemy = this.joined.get(enemyUser.userId);
+
+      if (!currentUser || !enemy) return;
+
+      this.sendResult(
+        currentUser,
+        'attack',
+        JSON.stringify({ status, position: { ...rest }, currentPlayer: indexPlayer })
+      );
+      this.sendResult(enemy, 'attack', JSON.stringify({ status, position: { ...rest }, currentPlayer: indexPlayer }));
+      let nextPlayer = currentPlayer;
+
+      if (status === 'miss') nextPlayer = this.rooms.setCurrentPlayer(gameId, enemyUser.userId);
+
+      this.sendResult(currentUser, 'turn', JSON.stringify({ currentPlayer: nextPlayer }));
+      this.sendResult(enemy, 'turn', JSON.stringify({ currentPlayer: nextPlayer }));
     });
   }
 
