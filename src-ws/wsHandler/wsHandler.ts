@@ -42,48 +42,69 @@ export class WSHandlerBattleship extends EventEmitter {
 
   constructor() {
     super();
+
+    this.on('broadcast_rooms', () => {
+      this.sendResult(this.wsForBroadcast(), 'update_room', JSON.stringify(this.rooms.getEmptyRooms()));
+    });
+
     this.on('reg', (userId: string, data: string) => {
-      const user = JSON.parse(data) as User;
-      const ws = this.joined.get(userId)!.ws;
+      const joinedUser = this.joined.get(userId);
 
-      this.joined.get(userId)!.user = user;
+      if (!joinedUser) return;
 
-      this.sendResult(ws, 'reg', JSON.stringify({ name: user.name, index: userId, error: false, errorText: '' }));
-      this.sendResult(ws, 'update_room', JSON.stringify(this.rooms.getEmptyRooms()));
-      this.sendResult(ws, 'update_winners', JSON.stringify(this.winners.winners));
+      const userData = JSON.parse(data) as User;
+      joinedUser['user'] = userData;
+
+      this.sendResult(
+        joinedUser,
+        'reg',
+        JSON.stringify({ name: userData.name, index: userId, error: false, errorText: '' })
+      );
+      this.sendResult(joinedUser, 'update_room', JSON.stringify(this.rooms.getEmptyRooms()));
+      this.sendResult(joinedUser, 'update_winners', JSON.stringify(this.winners.winners));
     });
 
     this.on('create_room', (userId: string, _data: string) => {
-      const user = this.joined.get(userId)!.user!;
-      this.rooms.createRoom({ name: user.name, userId });
+      const joinedUser = this.joined.get(userId);
 
-      this.sendResult(this.wsForBroadcast(), 'update_room', JSON.stringify(this.rooms.getEmptyRooms()));
+      if (!(joinedUser && joinedUser.user)) return;
+
+      this.rooms.createRoom({ name: joinedUser.user.name, userId });
+      this.emit('broadcast_rooms');
     });
 
-    this.on('create_room', (userId: string, _data: string) => {
-      const user = this.joined.get(userId)!.user!;
-      this.rooms.createRoom({ name: user.name, userId });
+    this.on('add_user_to_room', (userId: string, data: string) => {
+      const joinedUser = this.joined.get(userId);
 
-      this.sendResult(this.wsForBroadcast(), 'update_room', JSON.stringify(this.rooms.getEmptyRooms()));
+      if (!(joinedUser && joinedUser.user)) return;
+
+      const { indexRoom } = JSON.parse(data) as { indexRoom: number };
+      const { roomId, roomUsers } = this.rooms.addUserToRoom({ name: joinedUser.user.name, userId }, indexRoom);
+      const [{userId: enemyUserId}] = roomUsers.filter(({ userId: id }) => id !== userId);
+      
+      const enemyUser = this.joined.get(enemyUserId);
+      if (!enemyUser) return;
+
+      this.emit('broadcast_rooms');
+      this.sendResult(joinedUser, 'create_game', JSON.stringify({ idGame: roomId, idPlayer: userId }));
+      this.sendResult(enemyUser, 'create_game', JSON.stringify({ idGame: roomId, idPlayer: enemyUserId }));
     });
   }
 
-  private sendResult(ws: WebSocket | WebSocket[], type: TypeMessages, data: string) {
-    if (Array.isArray(ws)) {
-      ws.forEach((w) => {
+  private sendResult(users: Joined | Joined[], type: TypeMessages, data: string) {
+    if (Array.isArray(users)) {
+      users.forEach(({ ws }) => {
         console.log(`Send message: ${type} => ${data}`);
-        w.send(JSON.stringify({ type, data, id: 0 }));
+        ws.send(JSON.stringify({ type, data, id: 0 }));
       });
     } else {
       console.log(`Send message: ${type} => ${data}`);
-      ws.send(JSON.stringify({ type, data, id: 0 }));
+      users.ws.send(JSON.stringify({ type, data, id: 0 }));
     }
   }
 
-  private wsForBroadcast(): WebSocket[] {
-    return Array.from(this.joined.values())
-      .map(({ ws }) => (ws.readyState === WebSocket.OPEN ? ws : null))
-      .filter(Boolean) as WebSocket[];
+  private wsForBroadcast(): Joined[] {
+    return Array.from(this.joined.values()).filter(({ ws }) => ws && ws.OPEN);
   }
 
   public addUser(userId: string, ws: WebSocket) {

@@ -15,10 +15,15 @@ interface RoomDataDTO {
 export class Rooms {
   private readonly rooms: RoomData[] = [];
 
-  public createRoom(user: RoomUser): RoomDataDTO {
-    const roomId = this.rooms.push({ users: [user] }) - 1;
+  public createRoom(user: RoomUser) {
+    this.rooms.push({ users: [user] });
+  }
 
-    return { roomId, roomUsers: this.rooms[roomId].users };
+  public addUserToRoom(user: RoomUser, roomId: number): RoomDataDTO {
+    const room = this.rooms[roomId];
+    room.users.push(user);
+
+    return { roomId, roomUsers: room.users };
   }
 
   public getEmptyRooms(): RoomDataDTO[] {
