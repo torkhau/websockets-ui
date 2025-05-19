@@ -18,6 +18,7 @@ interface Board {
   cells: Cell[][];
   ships: Ship[];
   rawShips?: ShipData[];
+  currentShips: number;
 }
 
 const LENGTH = 10;
@@ -26,6 +27,7 @@ export class GameBoard {
   private readonly board: Board = {
     cells: Array.from({ length: LENGTH }, () => Array.from({ length: LENGTH }, () => undefined)),
     ships: [],
+    currentShips: 10,
   };
 
   private placeShip(initPosition: Coordinates, direction: boolean, length: number): void {
@@ -54,7 +56,7 @@ export class GameBoard {
     return this.board.rawShips ? [...this.board.rawShips] : [];
   }
 
-  public shoot({ x, y }: Coordinates): 'miss' | 'shot' | 'killed' {
+  public shoot({ x, y }: Coordinates): 'miss' | 'shot' | 'killed' | 'finish' {
     const cell = this.board.cells[y][x];
 
     if (cell === undefined) {
@@ -75,6 +77,10 @@ export class GameBoard {
           ship.positions.forEach(({ x, y }) => {
             this.board.cells[y][x] = 'killed';
           });
+          this.board.currentShips -= 1;
+
+          if (this.board.currentShips === 0) return 'finish';
+
           return 'killed';
         }
 

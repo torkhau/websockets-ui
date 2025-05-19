@@ -154,6 +154,16 @@ export class WSHandlerBattleship extends EventEmitter {
 
       if (!currentUser || !enemy) return;
 
+      if (status === 'finish') {
+        this.sendResult(currentUser, 'finish', JSON.stringify({ winPlayer: indexPlayer }));
+        this.sendResult(enemy, 'finish', JSON.stringify({ winPlayer: indexPlayer }));
+
+        const winners = this.winners.updateWinner({ userId: indexPlayer, name: currentUser.user?.name || '' });
+
+        this.sendResult(this.wsForBroadcast(), 'update_winners', JSON.stringify(winners));
+        return;
+      }
+
       this.sendResult(
         currentUser,
         'attack',
