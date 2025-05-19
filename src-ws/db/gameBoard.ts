@@ -1,6 +1,13 @@
 type Cell = undefined | 'ship' | 'hit' | 'miss' | 'sunk';
 
-type Coordinates = { x: number; y: number };
+export type Coordinates = { x: number; y: number };
+
+export interface ShipData {
+  position: Coordinates;
+  direction: boolean;
+  length: number;
+  type: 'small' | 'medium' | 'large' | 'huge';
+}
 
 interface Ship {
   positions: Coordinates[];
@@ -10,6 +17,7 @@ interface Ship {
 interface Board {
   cells: Cell[][];
   ships: Ship[];
+  rawShips?: ShipData[];
 }
 
 const LENGTH = 10;
@@ -20,7 +28,7 @@ export class GameBoard {
     ships: [],
   };
 
-  public placeShip(initPosition: Coordinates, direction: boolean, length: number): void {
+  private placeShip(initPosition: Coordinates, direction: boolean, length: number): void {
     const ship: Ship = {
       positions: [],
       hits: new Set(),
@@ -35,6 +43,15 @@ export class GameBoard {
     }
 
     this.board.ships.push(ship);
+  }
+
+  public addShips(ships: ShipData[]) {
+    this.board.rawShips = [...ships];
+    ships.forEach(({ position, direction, length }) => this.placeShip(position, direction, length));
+  }
+
+  public getRawShips(): ShipData[] {
+    return this.board.rawShips ? [...this.board.rawShips] : [];
   }
 
   public shoot({ x, y }: Coordinates): 'miss' | 'hit' | 'sunk' {

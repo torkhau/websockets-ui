@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { WebSocket } from 'ws';
-import { Rooms } from '../db/rooms.js';
+import { Rooms, ShipPosition } from '../db/rooms.js';
 import { Winners } from '../db/winners.js';
 
 export const typeMessages = [
@@ -80,14 +80,39 @@ export class WSHandlerBattleship extends EventEmitter {
 
       const { indexRoom } = JSON.parse(data) as { indexRoom: number };
       const { roomId, roomUsers } = this.rooms.addUserToRoom({ name: joinedUser.user.name, userId }, indexRoom);
-      const [{userId: enemyUserId}] = roomUsers.filter(({ userId: id }) => id !== userId);
-      
+      const [{ userId: enemyUserId }] = roomUsers.filter(({ userId: id }) => id !== userId);
+
       const enemyUser = this.joined.get(enemyUserId);
       if (!enemyUser) return;
 
       this.emit('broadcast_rooms');
       this.sendResult(joinedUser, 'create_game', JSON.stringify({ idGame: roomId, idPlayer: userId }));
       this.sendResult(enemyUser, 'create_game', JSON.stringify({ idGame: roomId, idPlayer: enemyUserId }));
+    });
+
+    this.on('add_ships', (_userId: string, data: string) => {
+      const { gameId, ...rest } = JSON.parse(data) as ShipPosition;
+
+      this.rooms.setShips({ gameId, ...rest });
+
+      if (this.rooms.isRoomReady(gameId)) {
+        const [user1, user2] = this.rooms.getUsersInRoom(gameId);
+        const joinedUser1 = this.joined.get(user1.userId);
+        const joinedUser2 = this.joined.get(user2.userId);
+
+        if (joinedUser1 && joinedUser2) {
+          this.sendResult(
+            joinedUser1,
+            'start_game',
+            JSON.stringify({ ships: user1.gameBoard?.getRawShips(), currentPlayerIndex: user1.userId })
+          );
+          this.sendResult(
+            joinedUser2,
+            'start_game',
+            JSON.stringify({ ships: user2.gameBoard?.getRawShips(), currentPlayerIndex: user2.userId })
+          );
+        }
+      }
     });
   }
 

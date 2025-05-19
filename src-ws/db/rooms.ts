@@ -1,9 +1,10 @@
-import { GameBoard } from './gameBoard.js';
+import { GameBoard, ShipData } from './gameBoard.js';
 
 export interface RoomUser {
   name: string;
   userId: string;
   gameBoard?: GameBoard;
+  ready?: boolean;
 }
 
 interface RoomData {
@@ -15,11 +16,19 @@ interface RoomDataDTO {
   roomUsers: RoomUser[];
 }
 
+export interface ShipPosition {
+  gameId: number;
+  indexPlayer: string;
+  ships: ShipData[];
+}
+
 export class Rooms {
   private readonly rooms: RoomData[] = [];
 
   public createRoom(user: RoomUser) {
-    this.rooms.push({ users: [{ ...user, gameBoard: new GameBoard() }] });
+    this.rooms.push({
+      users: [{ ...user, gameBoard: new GameBoard() }],
+    });
   }
 
   public addUserToRoom(user: RoomUser, roomId: number): RoomDataDTO {
@@ -33,5 +42,31 @@ export class Rooms {
     return this.rooms
       .map((room, index) => ({ roomId: index, roomUsers: room.users }))
       .filter(({ roomUsers }) => roomUsers.length === 1);
+  }
+
+  public setShips({ gameId, indexPlayer, ships }: ShipPosition) {
+    const room = this.rooms[gameId];
+    const user = room.users.find(({ userId }) => userId === indexPlayer);
+
+    if (!user) return;
+
+    user.gameBoard?.addShips(ships);
+    user.ready = true;
+  }
+
+  public isRoomReady(gameId: number): boolean {
+    const room = this.rooms[gameId];
+
+    if (!room) return false;
+
+    return room.users.every(({ ready }) => ready);
+  }
+
+  public getUsersInRoom(gameId: number): RoomUser[] {
+    const room = this.rooms[gameId];
+
+    if (!room) return [];
+
+    return room.users;
   }
 }
