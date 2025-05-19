@@ -1,6 +1,9 @@
+import { GameBoard } from './gameBoard.js';
+
 export interface RoomUser {
   name: string;
   userId: string;
+  gameBoard?: GameBoard;
 }
 
 interface RoomData {
@@ -16,12 +19,12 @@ export class Rooms {
   private readonly rooms: RoomData[] = [];
 
   public createRoom(user: RoomUser) {
-    this.rooms.push({ users: [user] });
+    this.rooms.push({ users: [{ ...user, gameBoard: new GameBoard() }] });
   }
 
   public addUserToRoom(user: RoomUser, roomId: number): RoomDataDTO {
     const room = this.rooms[roomId];
-    room.users.push(user);
+    room.users.push({ ...user, gameBoard: new GameBoard() });
 
     return { roomId, roomUsers: room.users };
   }
